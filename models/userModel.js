@@ -35,6 +35,8 @@ const UserSchema = new Schema(
       minLength: [3, "Lastname too short"],
     },
     avatarUrl: String,
+    isVerified: { type: Boolean, default: false },
+    verificationToken: String,
     followers: [
       {
         type: Schema.Types.ObjectId,

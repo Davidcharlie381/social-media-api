@@ -4,18 +4,28 @@ const winston = require("winston");
 
 const connectDb = require("./utils/connectDb");
 const config = require("./config/config");
-const sendEmail = require("./utils/sendEmail");
+// const sendEmail = require("./utils/sendEmail");
 
 const userRouter = require("./routes/userRoute");
 const authRouter = require("./routes/authRoute");
 const { errorResponse } = require("./utils/response");
+
+const nodemailer = require("nodemailer");
+
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: config.MAILER_USER,
+//     pass: config.MAILER_PASS,
+//   },
+// });
 
 const API_VERSION = "/api/v1";
 
 const app = express();
 
 // const mailOptions = {
-//   from: "charleswisdomdavid@gmail.com",
+//   from: "helendavid733@gmail.com",
 //   to: "davidcharleswisdom@gmail.com",
 //   subject: "Charlie from Soci",
 //   text: "This is a plain text version of the email. You can view it if HTML is not supported.",
@@ -34,7 +44,7 @@ const app = express();
 // }
 
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: "http://localhost:3000",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
 };

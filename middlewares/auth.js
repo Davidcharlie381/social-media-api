@@ -22,15 +22,44 @@ class AuthMiddleware {
 
     const currentUser = await User.findById(decoded.userId);
 
-    // console.log(currentUser)
+    if (!currentUser) {
+      return errorResponse(res, 404, "No user found with token provided");
+    }
 
     req.user = currentUser;
 
     next();
-    // // } catch (error) {
-    //   console.log(error.message);
-    //   errorResponse(res, 500, error.message);
-    // }
+  });
+
+  static isAdmin = catchAsyncError(async (req, res, next) => {
+    const token =
+      req.headers.authorization && req.headers.authorization.split(" ")[1];
+
+    if (!token) {
+      return errorResponse(res, 401, "Unauthorized - No token provide");
+    }
+    const decoded = jwt.verify(token, config.JWT_SECRET);
+    if (!decoded) {
+      return errorResponse(res, 401, "Unauthorized - Invalid token provided");
+    }
+
+    const currentUser = await User.findById(decoded.userId);
+
+    if (!currentUser) {
+      return errorResponse(res, 404, "No user found with token provided");
+    }
+
+    if (currentUser.email !== "admin@example.com") {
+      return errorResponse(
+        res,
+        401,
+        "Unauthorized - Only admins can view this resource"
+      );
+    }
+
+    req.user = currentUser;
+
+    next();
   });
 }
 

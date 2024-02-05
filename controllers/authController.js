@@ -3,12 +3,12 @@ const generateToken = require("../utils/generateToken");
 const catchAsyncError = require("../utils/catchAsyncError");
 const { successResponse, errorResponse } = require("../utils/response");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+const sendEmail = require("../utils/sendEmail");
 
 class AuthController {
   static register = catchAsyncError(async (req, res) => {
     const { email, username, password } = req.body;
-
-    // ,  firstName, lastName  && firstName && lastName
 
     if (!(email && password && username)) {
       return errorResponse(res, 401, "All fields are required");
@@ -21,13 +21,38 @@ class AuthController {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await User.create({
+    const newUser = new User({
       email,
       username,
       password: hashedPassword,
       // firstName,
       // lastName,
     });
+
+    try {
+      const verifyToken = crypto.randomBytes(32).toString("hex");
+
+      const mailOptions = {
+        to: email,
+        subject: `Welcome to Soci, ${username}!`,
+        text: `Hi, ${username}! \n\n Click on this link to verify your account: http://localhost:5000/api/v1/auth/verify?token=${verifyToken}`,
+      };
+
+      const result = await sendEmail(mailOptions);
+      console.log(result);
+
+      newUser.verificationToken = crypto
+        .createHash("sha256")
+        .update(verifyToken)
+        .digest("hex");
+
+      await newUser.save();
+      console.log("Reached");
+    } catch (error) {
+      newUser.verificationToken = undefined;
+      await newUser.save();
+      console.log("Didn't go");
+    }
 
     const token = await generateToken(newUser._id);
 
@@ -78,6 +103,27 @@ class AuthController {
     };
 
     successResponse(res, 201, "Log in successful", safeUser);
+  });
+
+  static verify = catchAsyncError(async (req, res) => {
+    const { token } = req.query;
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    const user = await User.findOne({ verificationToken: hashedToken });
+    if (!user) {
+      return errorResponse(
+        res,
+        401,
+        "Unauthorized - Invalid or expired ronn dverification token"
+      );
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+
+    await user.save({ validateBeforeSave: false });
+    successResponse(res, 200, "Verified successfully");
   });
 
   // static resetPassword = catchAsyncError(async (req, res) => {

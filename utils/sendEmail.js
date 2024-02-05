@@ -10,11 +10,21 @@ const transporter = nodemailer.createTransport({
 });
 
 async function sendEmail(options) {
-  transporter.sendMail(options, (err, info) => {
-    if (err) {
-      return err.message;
-    }
-    return info.messageId;
+  return new Promise((res, rej) => {
+    transporter.sendMail(
+      {
+        from: "helendavid733@gmail.com",
+        to: options.to,
+        subject: options.subject,
+        text: options.text,
+      },
+      (error, info) => {
+        if (error) {
+          return rej(error.message);
+        }
+        return res(info);
+      }
+    );
   });
 }
 

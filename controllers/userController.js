@@ -1,5 +1,6 @@
 const User = require("../models/userModel");
 const { successResponse, errorResponse } = require("../utils/response");
+const bcrypt = require("bcryptjs");
 
 const catchAsyncError = require("../utils/catchAsyncError");
 
@@ -56,15 +57,39 @@ class UserController {
     successResponse(res, 201, `Followed ${username}`, userToFollow);
   });
 
+  // TODO: 
+  // Make it work
   static updateUser = catchAsyncError(async (req, res) => {
-    const { username, password } = req.body;
+    const { username, oldPassword, password } = req.body;
 
-    if (!(username && password)) {
-      return errorResponse(res, 400, "All fields required");
+    if (!username && !password) {
+      return errorResponse(res, 400, "Must update at least one field");
     }
+
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return errorResponse(res, 404, "User not found");
+    }
+
+    username && (user.username = username);
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    if (password && oldPassword && user.password !== oldPassword) {
+      return errorResponse(res, 400, "Incorrect old password");
+    }
+
+    password && (user.password = hashedPassword);
+
+    await user.save();
 
     successResponse(res, 200, "Updated successfully", { username, password });
   });
+
+  static deleteUser = catchAsyncError(async(req, res) => {
+    const {id} = req.params
+  })
 }
 
 module.exports = UserController;
